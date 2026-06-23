@@ -1,5 +1,6 @@
-from database import Base
 from sqlalchemy import Column, DateTime, Float, ForeignKey, Integer, String
+
+from app.database import Base
 
 
 class City(Base):

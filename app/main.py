@@ -86,19 +86,21 @@ def delete_city(city_id: int, db: Session = Depends(get_db)):
 
 
 @app.post("/temperatures/update",
-          response_model=List[schemas.TemperatureResponse])
+          response_model=schemas.TemperatureUpdateResponse)
 async def update_temperatures(
     db: Session = Depends(get_db),
-    client: httpx.AsyncClient = Depends(get_http_client)
+        client: httpx.AsyncClient = Depends(get_http_client)
 ):
     cities = db.query(models.City).all()
+    success_cities = []
+    failed_cities = []
     for city in cities:
         query = f"https://wttr.in/{city.name}?format=%t"
         try:
             response = await client.get(query)
             response.raise_for_status()
         except httpx.HTTPError as e:
-            print(e)
+            failed_cities.append({"city": city.name, "error": str(e)})
             continue
         else:
             clean_text = (
@@ -108,23 +110,17 @@ async def update_temperatures(
                 .strip()
             )
             float_temperature = float(clean_text)
-            existing_temp = (
-                db.query(models.Temperature)
-                .filter(models.Temperature.city_id == city.id)
-                .first()
+            temperature = models.Temperature(
+                city_id=city.id,
+                date_time=datetime.now(),
+                temperature=float_temperature,
             )
-            if existing_temp is None:
-                temperature = models.Temperature(
-                    city_id=city.id,
-                    date_time=datetime.now(),
-                    temperature=float_temperature,
-                )
-                db.add(temperature)
-            else:
-                existing_temp.temperature = float_temperature
-                existing_temp.date_time = datetime.now()
+            db.add(temperature)
+            success_cities.append({"city": city.name,
+                                   "temperature": float_temperature})
+
     db.commit()
-    return db.query(models.Temperature).all()
+    return {"success_cities": success_cities, "failed_cities": failed_cities}
 
 
 @app.get("/temperatures/", response_model=List[schemas.TemperatureResponse])

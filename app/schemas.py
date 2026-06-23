@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import List
 
 from pydantic import BaseModel, ConfigDict
 
@@ -30,3 +31,18 @@ class TemperatureCreate(TemperatureBase):
 class TemperatureResponse(TemperatureBase):
     id: int
     model_config = ConfigDict(from_attributes=True)
+
+
+class SuccessUpdate(BaseModel):
+    city: str
+    temperature: float
+
+
+class FailedUpdate(BaseModel):
+    city: str
+    error: str
+
+
+class TemperatureUpdateResponse(BaseModel):
+    success_cities: List[SuccessUpdate]
+    failed_cities: List[FailedUpdate]
