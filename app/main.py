@@ -109,7 +109,16 @@ async def update_temperatures(
                 .replace("+", "")
                 .strip()
             )
-            float_temperature = float(clean_text)
+            try:
+                float_temperature = float(clean_text)
+            except ValueError:
+                failed_cities.append({
+                    "city": city.name,
+                    "error": f"Failed to parse temperature value: "
+                             f"'{clean_text}'"
+                })
+                continue
+
             temperature = models.Temperature(
                 city_id=city.id,
                 date_time=datetime.now(),
